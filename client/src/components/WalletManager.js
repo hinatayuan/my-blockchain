@@ -10,20 +10,37 @@ const WalletManager = ({ wallets, onWalletsChange }) => {
 
   const createWallet = async (e) => {
     e.preventDefault();
-    if (!newWalletName.trim()) {
+    const trimmedName = newWalletName.trim();
+    
+    if (!trimmedName) {
       setMessage({ text: '请输入钱包名称', type: 'error' });
+      return;
+    }
+    
+    if (trimmedName.length < 2) {
+      setMessage({ text: '钱包名称至少需要 2 个字符', type: 'error' });
       return;
     }
 
     setLoading(true);
+    setMessage({ text: `正在创建钱包 "${trimmedName}"...`, type: 'info' });
+    
     try {
-      await axios.post('/api/wallets', { name: newWalletName });
-      setMessage({ text: `钱包 "${newWalletName}" 创建成功！`, type: 'success' });
+      await axios.post('/api/wallets', { name: trimmedName });
+      setMessage({ 
+        text: `✨ 钱包 "${trimmedName}" 创建成功！`, 
+        type: 'success' 
+      });
       setNewWalletName('');
-      onWalletsChange();
+      
+      // 自动刷新钱包列表
+      setTimeout(() => {
+        onWalletsChange();
+      }, 500);
+      
     } catch (error) {
       setMessage({ 
-        text: error.response?.data?.error || '创建钱包失败', 
+        text: error.response?.data?.error || '创建钱包失败，请稍后重试', 
         type: 'error' 
       });
     } finally {
@@ -32,18 +49,36 @@ const WalletManager = ({ wallets, onWalletsChange }) => {
   };
 
   const deleteWallet = async (walletName) => {
-    if (!window.confirm(`确定要删除钱包 "${walletName}" 吗？`)) {
+    const wallet = wallets.find(w => w.name === walletName);
+    const hasBalance = wallet && wallet.balance > 0;
+    
+    let confirmMessage = `确定要删除钱包 "${walletName}" 吗？`;
+    if (hasBalance) {
+      confirmMessage += `\n\n⚠️ 警告：该钱包还有 ${wallet.balance} 个代币，删除后将无法找回！`;
+    }
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
     setLoading(true);
+    setMessage({ text: `正在删除钱包 "${walletName}"...`, type: 'info' });
+    
     try {
       await axios.delete(`/api/wallets/${walletName}`);
-      setMessage({ text: `钱包 "${walletName}" 删除成功！`, type: 'success' });
-      onWalletsChange();
+      setMessage({ 
+        text: `✓ 钱包 "${walletName}" 已成功删除`, 
+        type: 'success' 
+      });
+      
+      // 自动刷新钱包列表
+      setTimeout(() => {
+        onWalletsChange();
+      }, 500);
+      
     } catch (error) {
       setMessage({ 
-        text: error.response?.data?.error || '删除钱包失败', 
+        text: error.response?.data?.error || '删除钱包失败，请稍后重试', 
         type: 'error' 
       });
     } finally {
@@ -58,22 +93,32 @@ const WalletManager = ({ wallets, onWalletsChange }) => {
       return;
     }
 
+    const amount = parseInt(mintAmount) || 1000;
     setLoading(true);
+    setMessage({ text: '正在从水龙头领取代币...', type: 'info' });
+    
     try {
       const response = await axios.post('/api/faucet', { 
         walletName: selectedWallet,
-        amount: parseInt(mintAmount) || 1000
+        amount: amount
       });
+      
       setMessage({ 
-        text: response.data.message, 
+        text: `🎉 领取成功！${selectedWallet} 获得 ${amount} 代币`, 
         type: 'success' 
       });
+      
       setMintAmount('');
       setSelectedWallet('');
-      onWalletsChange();
+      
+      // 自动刷新钱包数据
+      setTimeout(() => {
+        onWalletsChange();
+      }, 500);
+      
     } catch (error) {
       setMessage({ 
-        text: error.response?.data?.error || '水龙头请求失败', 
+        text: error.response?.data?.error || '水龙头请求失败，请稍后重试', 
         type: 'error' 
       });
     } finally {
@@ -108,8 +153,32 @@ const WalletManager = ({ wallets, onWalletsChange }) => {
               disabled={loading}
             />
           </div>
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? '创建中...' : '创建钱包'}
+          <button 
+            type="submit" 
+            className="btn" 
+            disabled={loading}
+            style={{
+              position: 'relative',
+              minHeight: '44px'
+            }}
+          >
+            {loading ? (
+              <>
+                <span style={{
+                  display: 'inline-block',
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid transparent',
+                  borderTop: '2px solid currentColor',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginRight: '8px'
+                }}></span>
+                创建中...
+              </>
+            ) : (
+              '➕ 创建钱包'
+            )}
           </button>
         </form>
       </div>
@@ -145,9 +214,40 @@ const WalletManager = ({ wallets, onWalletsChange }) => {
               disabled={loading}
             />
           </div>
-          <button type="submit" className="btn success" disabled={loading}>
-            {loading ? '请求中...' : '领取代币'}
+          <button 
+            type="submit" 
+            className="btn success" 
+            disabled={loading}
+            style={{
+              position: 'relative',
+              minHeight: '44px'
+            }}
+          >
+            {loading ? (
+              <>
+                <span style={{
+                  display: 'inline-block',
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid transparent',
+                  borderTop: '2px solid currentColor',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginRight: '8px'
+                }}></span>
+                领取中...
+              </>
+            ) : (
+              '💰 领取代币'
+            )}
           </button>
+          
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </form>
       </div>
 
@@ -178,8 +278,28 @@ const WalletManager = ({ wallets, onWalletsChange }) => {
                     className="btn danger"
                     onClick={() => deleteWallet(wallet.name)}
                     disabled={loading}
+                    style={{
+                      position: 'relative',
+                      minHeight: '36px'
+                    }}
                   >
-                    删除钱包
+                    {loading ? (
+                      <>
+                        <span style={{
+                          display: 'inline-block',
+                          width: '12px',
+                          height: '12px',
+                          border: '2px solid transparent',
+                          borderTop: '2px solid currentColor',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                          marginRight: '6px'
+                        }}></span>
+                        删除中...
+                      </>
+                    ) : (
+                      '🗑️ 删除钱包'
+                    )}
                   </button>
                 </div>
               </div>

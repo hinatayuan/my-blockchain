@@ -104,6 +104,14 @@ function App() {
     }, 5000);
   };
 
+  // 全局数据刷新函数
+  const refreshAllData = async () => {
+    await Promise.all([
+      fetchBlockchainData(),
+      fetchWallets()
+    ]);
+  };
+
   const tabs = [
     { id: 'dashboard', label: '仪表盘', icon: '📊' },
     { id: 'wallets', label: '钱包管理', icon: '👛' },
@@ -120,18 +128,21 @@ function App() {
             blockchainData={blockchainData}
             wallets={wallets}
             notifications={notifications}
+            onRefresh={refreshAllData}
           />
         );
       case 'wallets':
-        return <WalletManager wallets={wallets} onWalletsChange={fetchWallets} />;
+        return (
+          <WalletManager 
+            wallets={wallets} 
+            onWalletsChange={refreshAllData}
+          />
+        );
       case 'transactions':
         return (
           <TransactionManager 
             wallets={wallets}
-            onTransactionCreate={() => {
-              fetchBlockchainData();
-              fetchWallets();
-            }}
+            onTransactionCreate={refreshAllData}
           />
         );
       case 'mining':
@@ -139,10 +150,7 @@ function App() {
           <MiningPanel 
             wallets={wallets}
             pendingTransactions={blockchainData.pendingTransactions}
-            onBlockMined={() => {
-              fetchBlockchainData();
-              fetchWallets();
-            }}
+            onBlockMined={refreshAllData}
           />
         );
       case 'explorer':

@@ -13,6 +13,65 @@ code {
     monospace;
 }
 
+/* Loading 和 transition 动画 */
+.btn {
+  transition: all 0.3s ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* 卡片悬浮效果 */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 通知动画 */
+.alert {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 成功状态特效 */
+.alert.success {
+  border-left: 4px solid #28a745;
+}
+
+.alert.error {
+  border-left: 4px solid #dc3545;
+}
+
+.alert.info {
+  border-left: 4px solid #007bff;
+}
+
+/* Spinner 动画 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;

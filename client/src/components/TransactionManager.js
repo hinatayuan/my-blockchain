@@ -27,17 +27,23 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
       return;
     }
 
+    const transactionAmount = parseFloat(amount);
     setLoading(true);
+    setMessage({ 
+      text: `正在创建转账交易（${transactionAmount} 代币）...`, 
+      type: 'info' 
+    });
+    
     try {
       const response = await axios.post('/api/transactions', {
         fromWalletName: fromWallet,
         to: toAddress,
-        amount: parseFloat(amount),
+        amount: transactionAmount,
         memo: '区块链应用转账'
       });
 
       setMessage({ 
-        text: `交易创建成功！交易ID: ${response.data.transaction.hash || response.data.transaction.id}`, 
+        text: `✨ 交易创建成功！${transactionAmount} 代币已添加到待处理队列`, 
         type: 'success' 
       });
       
@@ -46,10 +52,14 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
       setToAddress('');
       setAmount('');
       
-      onTransactionCreate();
+      // 自动刷新数据
+      setTimeout(() => {
+        onTransactionCreate();
+      }, 500);
+      
     } catch (error) {
       setMessage({ 
-        text: error.response?.data?.error || '创建交易失败', 
+        text: error.response?.data?.error || '创建交易失败，请检查余额和地址', 
         type: 'error' 
       });
     } finally {
@@ -143,54 +153,85 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
             )}
           </div>
 
-          <button type="submit" className="btn" disabled={loading || wallets.length === 0}>
-            {loading ? '发送中...' : '发送交易'}
+          <button 
+            type="submit" 
+            className="btn" 
+            disabled={loading || wallets.length === 0}
+            style={{
+              position: 'relative',
+              minHeight: '44px'
+            }}
+          >
+            {loading ? (
+              <>
+                <span style={{
+                  display: 'inline-block',
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid transparent',
+                  borderTop: '2px solid currentColor',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginRight: '8px'
+                }}></span>
+                发送中...
+              </>
+            ) : (
+              '💸 发送交易'
+            )}
           </button>
+          
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </form>
       </div>
 
       {wallets.length === 0 && (
         <div className="card">
           <div className="alert info">
-            <strong>No wallets available!</strong><br />
-            You need to create at least two wallets to send transactions. 
-            Go to the Wallets tab to create your first wallet.
+            <strong>没有可用的钱包！</strong><br />
+            您需要创建至少两个钱包才能发送交易。
+            请前往钱包选项卡创建您的第一个钱包。
           </div>
         </div>
       )}
 
       {wallets.length > 0 && (
         <div className="card">
-          <h2>📊 Transaction Helper</h2>
+          <h2>📊 交易助手</h2>
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-value">{wallets.length}</div>
-              <div className="stat-label">Available Wallets</div>
+              <div className="stat-label">可用钱包</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">
                 {wallets.filter(w => w.balance > 0).length}
               </div>
-              <div className="stat-label">Funded Wallets</div>
+              <div className="stat-label">有资金钱包</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">
                 {wallets.reduce((sum, wallet) => sum + wallet.balance, 0)}
               </div>
-              <div className="stat-label">Total Available</div>
+              <div className="stat-label">总可用金额</div>
             </div>
           </div>
 
-          <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>💰 Wallet Balances</h3>
+          <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>💰 钱包余额</h3>
           <div className="wallet-list">
             {wallets.map((wallet) => (
               <div key={wallet.name} className="wallet-card">
                 <div className="wallet-name">{wallet.name}</div>
                 <div className="wallet-address">{wallet.address}</div>
-                <div className="wallet-balance">{wallet.balance} tokens</div>
+                <div className="wallet-balance">{wallet.balance} 代币</div>
                 {wallet.balance === 0 && (
                   <div style={{ color: '#dc3545', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                    ⚠️ No funds available
+                    ⚠️ 无可用资金
                   </div>
                 )}
               </div>
@@ -200,14 +241,14 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
       )}
 
       <div className="card">
-        <h2>💡 Transaction Tips</h2>
+        <h2>💡 交易提示</h2>
         <div style={{ color: '#666' }}>
           <ul style={{ paddingLeft: '1.5rem', lineHeight: '1.6' }}>
-            <li>Transactions are added to the pending pool and must be mined to be confirmed</li>
-            <li>You need sufficient balance in your sender wallet</li>
-            <li>Use the Mining tab to mine pending transactions and confirm them</li>
-            <li>Each mined block includes a mining reward for the miner</li>
-            <li>You can send tokens to any valid address, including wallets you create</li>
+            <li>交易会被添加到待处理池中，必须被挖掘以获得确认</li>
+            <li>您的发送者钱包需要有足够的余额</li>
+            <li>使用挖矿选项卡来挖掘待处理交易并确认它们</li>
+            <li>每个挖出的区块都会为矿工提供挖矿奖励</li>
+            <li>您可以向任何有效地址发送代币，包括您创建的钱包</li>
           </ul>
         </div>
       </div>

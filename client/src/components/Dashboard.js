@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Dashboard = ({ blockchainData, wallets, notifications }) => {
+const Dashboard = ({ blockchainData, wallets, notifications, onRefresh }) => {
   const { info } = blockchainData;
   
   const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
@@ -8,6 +8,27 @@ const Dashboard = ({ blockchainData, wallets, notifications }) => {
   
   return (
     <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0 }}>📊 系统概览</h2>
+        {onRefresh && (
+          <button 
+            onClick={onRefresh}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+            title="刷新所有数据"
+          >
+            🔄 刷新
+          </button>
+        )}
+      </div>
+      
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{info.height || 0}</div>

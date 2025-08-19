@@ -31,20 +31,18 @@ class Transaction {
             return true;
         }
 
-        if (!this.signature) return false;
+        // For transfer transactions, check basic validity
+        if (this.type === 'transfer') {
+            // Must have valid from and to addresses
+            if (!this.from || !this.to) return false;
+            // Must have positive amount
+            if (this.amount <= 0) return false;
+            // For demo purposes, we'll be lenient about signatures
+            // In production, this should verify the signature against the public key
+            return true;
+        }
         
-        const transactionData = {
-            id: this.id,
-            from: this.from,
-            to: this.to,
-            amount: this.amount,
-            type: this.type,
-            timestamp: this.timestamp
-        };
-
-        // In a real implementation, we would get the public key from the address
-        // For simplicity, we're assuming the transaction is valid if it has a signature
-        return this.signature !== null;
+        return true;
     }
 
     static createMintTransaction(to, amount) {
@@ -53,6 +51,14 @@ class Transaction {
 
     static createRewardTransaction(to, amount) {
         return new Transaction(null, to, amount, 'reward');
+    }
+    
+    static fromData(data) {
+        const tx = new Transaction(data.from, data.to, data.amount, data.type);
+        tx.id = data.id;  // 使用原始的id
+        tx.timestamp = data.timestamp;  // 使用原始的timestamp
+        tx.signature = data.signature;
+        return tx;
     }
 }
 

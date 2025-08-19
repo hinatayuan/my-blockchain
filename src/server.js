@@ -80,11 +80,7 @@ function loadBlockchainData() {
             
             myBlockchain.chain = data.chain.map(blockData => {
                 const transactions = blockData.transactions.map(txData => {
-                    const tx = new Transaction(txData.from, txData.to, txData.amount, txData.type);
-                    tx.timestamp = txData.timestamp;
-                    tx.hash = txData.hash;
-                    tx.signature = txData.signature;
-                    return tx;
+                    return Transaction.fromData(txData);
                 });
                 const block = new Block(blockData.timestamp, transactions, blockData.previousHash);
                 block.hash = blockData.hash;
@@ -93,7 +89,12 @@ function loadBlockchainData() {
             });
             
             myBlockchain.difficulty = data.difficulty || 2;
-            myBlockchain.pendingTransactions = data.pendingTransactions || [];
+            
+            // Reconstruct pending transactions
+            myBlockchain.pendingTransactions = (data.pendingTransactions || []).map(txData => {
+                return Transaction.fromData(txData);
+            });
+            
             myBlockchain.miningReward = data.miningReward || 100;
             if (data.balances) {
                 myBlockchain.balances = new Map(data.balances);
@@ -403,12 +404,11 @@ const initializeDemo = () => {
         const charlie = walletManager.createWallet('Charlie');
         
         // Mint some initial tokens
-        myBlockchain.mintTokens(alice.address, 1500);
-        myBlockchain.mintTokens(bob.address, 1200);
-        myBlockchain.mintTokens(charlie.address, 1000);
+        myBlockchain.mintTokens(alice.address, 1000);
+        myBlockchain.mintTokens(bob.address, 500);
         
-        // Forge the initial block (PoS)
-        myBlockchain.forgePendingTransactions();
+        // Mine the initial block
+        myBlockchain.minePendingTransactions(charlie.address);
         
         // Save initial data
         saveBlockchainData();
@@ -425,29 +425,6 @@ const initializeDemo = () => {
     console.log('区块链高度:', myBlockchain.chain.length);
     console.log('待处理交易:', myBlockchain.pendingTransactions.length);
     console.log('钱包数量:', walletManager.wallets.size);
-    console.log('验证者数量:', myBlockchain.validators.size);
-    
-    // 设置区块锻造事件处理
-    myBlockchain.onBlockForged = (block, validator) => {
-        console.log(`新区块已锻造! 验证者: ${validator}, 高度: ${myBlockchain.chain.length - 1}`);
-        
-        // 通知所有连接的客户端
-        io.emit('blockForged', {
-            validator: validator,
-            reward: myBlockchain.miningReward,
-            height: myBlockchain.chain.length - 1,
-            block: block,
-            consensus: 'proof-of-stake'
-        });
-        
-        // 保存数据
-        saveBlockchainData();
-        saveWalletData();
-    };
-    
-    // 启动自动PoS出块
-    myBlockchain.startAutoForging();
-    console.log('PoS自动出块已启动，每6秒检查一次待处理交易');
 };
 
 // Auto-save data periodically
