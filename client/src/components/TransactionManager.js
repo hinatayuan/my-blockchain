@@ -1,78 +1,116 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const TransactionManager = ({ wallets, onTransactionCreate }) => {
-  const [fromWallet, setFromWallet] = useState('');
-  const [toAddress, setToAddress] = useState('');
-  const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [fromWallet, setFromWallet] = useState('')
+  const [toAddress, setToAddress] = useState('')
+  const [amount, setAmount] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [recentTransactions, setRecentTransactions] = useState([])
+  const [lastWalletCount, setLastWalletCount] = useState(wallets.length)
+
+  // 监听钱包数量变化
+  useEffect(() => {
+    if (wallets.length !== lastWalletCount) {
+      setLastWalletCount(wallets.length)
+      if (wallets.length > lastWalletCount) {
+        setMessage({
+          text: `检测到新钱包，请刷新页面获取最新余额`,
+          type: 'info'
+        })
+      }
+    }
+  }, [wallets.length, lastWalletCount])
 
   const sendTransaction = async (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     if (!fromWallet || !toAddress || !amount || amount <= 0) {
-      setMessage({ text: '请填写所有字段并输入有效值', type: 'error' });
-      return;
+      setMessage({ text: '请填写所有字段并输入有效值', type: 'error' })
+      return
     }
 
-    const senderWallet = wallets.find(w => w.name === fromWallet);
+    const senderWallet = wallets.find(w => w.name === fromWallet)
     if (!senderWallet) {
-      setMessage({ text: '找不到发送者钱包', type: 'error' });
-      return;
+      setMessage({ text: '找不到发送者钱包', type: 'error' })
+      return
     }
 
     if (senderWallet.balance < parseFloat(amount)) {
-      setMessage({ text: '余额不足', type: 'error' });
-      return;
+      setMessage({ text: '余额不足', type: 'error' })
+      return
     }
 
-    const transactionAmount = parseFloat(amount);
-    setLoading(true);
-    setMessage({ 
-      text: `正在创建转账交易（${transactionAmount} 代币）...`, 
-      type: 'info' 
-    });
-    
+    const transactionAmount = parseFloat(amount)
+    setLoading(true)
+    setMessage({
+      text: `正在创建转账交易（${transactionAmount} 代币）...`,
+      type: 'info'
+    })
+
     try {
       const response = await axios.post('/api/transactions', {
         fromWalletName: fromWallet,
         to: toAddress,
         amount: transactionAmount,
         memo: '区块链应用转账'
-      });
+      })
 
-      setMessage({ 
-        text: `✨ 交易创建成功！${transactionAmount} 代币已添加到待处理队列`, 
-        type: 'success' 
-      });
-      
+      // 添加到最近交易列表
+      const newTransaction = {
+        id: Date.now(),
+        from: senderWallet.address,
+        to: toAddress,
+        amount: transactionAmount,
+        type: 'transfer',
+        timestamp: Date.now(),
+        status: 'pending'
+      }
+
+      setRecentTransactions(prev => [newTransaction, ...prev.slice(0, 4)])
+
+      setMessage({
+        text: `✨ 交易创建成功！${transactionAmount} 代币已添加到待处理队列`,
+        type: 'success'
+      })
+
       // Reset form
-      setFromWallet('');
-      setToAddress('');
-      setAmount('');
-      
+      setFromWallet('')
+      setToAddress('')
+      setAmount('')
+
       // 自动刷新数据
       setTimeout(() => {
-        onTransactionCreate();
-      }, 500);
-      
+        onTransactionCreate()
+      }, 500)
+
     } catch (error) {
-      setMessage({ 
-        text: error.response?.data?.error || '创建交易失败，请检查余额和地址', 
-        type: 'error' 
-      });
+      setMessage({
+        text: error.response?.data?.error || '创建交易失败，请检查余额和地址',
+        type: 'error'
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const quickSelectRecipient = (walletName) => {
-    const wallet = wallets.find(w => w.name === walletName);
+    const wallet = wallets.find(w => w.name === walletName)
     if (wallet) {
-      setToAddress(wallet.address);
+      setToAddress(wallet.address)
     }
-  };
+  }
+
+  // 计算总可用余额
+  const getTotalAvailableBalance = () => {
+    return wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
+  }
+
+  // 获取有资金的钱包数量
+  const getWalletsWithFunds = () => {
+    return wallets.filter(w => w.balance > 0).length
+  }
 
   return (
     <div>
@@ -112,7 +150,7 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
               placeholder="输入接收者地址"
               disabled={loading}
             />
-            
+
             <div style={{ marginTop: '0.5rem' }}>
               <small style={{ color: '#666', display: 'block', marginBottom: '0.5rem' }}>
                 快速选择接收者:
@@ -153,9 +191,9 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
             )}
           </div>
 
-          <button 
-            type="submit" 
-            className="btn" 
+          <button
+            type="submit"
+            className="btn"
             disabled={loading || wallets.length === 0}
             style={{
               position: 'relative',
@@ -180,7 +218,7 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
               '💸 发送交易'
             )}
           </button>
-          
+
           <style>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -210,15 +248,19 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
             </div>
             <div className="stat-card">
               <div className="stat-value">
-                {wallets.filter(w => w.balance > 0).length}
+                {getWalletsWithFunds()}
               </div>
               <div className="stat-label">有资金钱包</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">
-                {wallets.reduce((sum, wallet) => sum + wallet.balance, 0)}
+                {getTotalAvailableBalance()}
               </div>
               <div className="stat-label">总可用金额</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{recentTransactions.length}</div>
+              <div className="stat-label">最近交易</div>
             </div>
           </div>
 
@@ -234,6 +276,45 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
                     ⚠️ 无可用资金
                   </div>
                 )}
+                {wallet.balance > 0 && (
+                  <div style={{ color: '#28a745', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                    ✅ 可发送交易
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 最近交易记录 */}
+      {recentTransactions.length > 0 && (
+        <div className="card">
+          <h2>📝 最近交易记录</h2>
+          <div className="transaction-list">
+            {recentTransactions.map((tx, index) => (
+              <div key={tx.id} className="transaction-item" style={{
+                borderLeft: `4px solid ${tx.status === "pending" ? "#ffc107" : "#28a745"}`,
+                backgroundColor: tx.status === "pending" ? '#fffbf0' : '#f8fff9'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>{tx.type.toUpperCase()}</strong>: {tx.amount} 代币
+                  </div>
+                  <div style={{
+                    fontSize: '0.8rem',
+                    color: tx.status === "pending" ? '#ffc107' : '#28a745',
+                    fontWeight: 'bold'
+                  }}>
+                    {tx.status === "pending" ? '⏳ 待确认' : '✅ 已确认'}
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+                  从: {tx.from.substring(0, 16)}... → 到: {tx.to.substring(0, 16)}...
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#856404', marginTop: '0.25rem' }}>
+                  创建时间: {new Date(tx.timestamp).toLocaleString()}
+                </div>
               </div>
             ))}
           </div>
@@ -249,11 +330,12 @@ const TransactionManager = ({ wallets, onTransactionCreate }) => {
             <li>使用挖矿选项卡来挖掘待处理交易并确认它们</li>
             <li>每个挖出的区块都会为矿工提供挖矿奖励</li>
             <li>您可以向任何有效地址发送代币，包括您创建的钱包</li>
+            <li>系统会自动刷新交易状态和钱包余额</li>
           </ul>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TransactionManager;
+export default TransactionManager

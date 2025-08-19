@@ -1,101 +1,124 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 
 const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
-  const [selectedMiner, setSelectedMiner] = useState('');
-  const [mining, setMining] = useState(false);
-  const [message, setMessage] = useState('');
-  const [miningProgress, setMiningProgress] = useState(0);
+  const [selectedMiner, setSelectedMiner] = useState('')
+  const [mining, setMining] = useState(false)
+  const [message, setMessage] = useState('')
+  const [miningProgress, setMiningProgress] = useState(0)
   const [miningStats, setMiningStats] = useState({
     blocksMinedToday: 0,
     totalRewardsEarned: 0
-  });
+  })
+  const [lastPendingCount, setLastPendingCount] = useState(pendingTransactions.length)
+
+  // 监听待处理交易数量变化
+  useEffect(() => {
+    if (pendingTransactions.length !== lastPendingCount) {
+      setLastPendingCount(pendingTransactions.length)
+
+      // 如果有新的待处理交易，显示通知
+      if (pendingTransactions.length > lastPendingCount) {
+        setMessage({
+          text: `发现 ${pendingTransactions.length - lastPendingCount} 个新待处理交易`,
+          type: 'info'
+        })
+      }
+    }
+  }, [pendingTransactions.length, lastPendingCount])
 
   const startMining = async () => {
     if (!selectedMiner) {
-      setMessage({ text: '请选择矿工钱包', type: 'error' });
-      return;
+      setMessage({ text: '请选择矿工钱包', type: 'error' })
+      return
     }
 
     if (pendingTransactions.length === 0) {
-      setMessage({ text: '没有待处理的交易可挖掘', type: 'error' });
-      return;
+      setMessage({ text: '没有待处理的交易可挖掘', type: 'error' })
+      return
     }
 
-    const minerWallet = wallets.find(w => w.name === selectedMiner);
+    const minerWallet = wallets.find(w => w.name === selectedMiner)
     if (!minerWallet) {
-      setMessage({ text: '找不到选中的矿工钱包', type: 'error' });
-      return;
+      setMessage({ text: '找不到选中的矿工钱包', type: 'error' })
+      return
     }
 
-    setMining(true);
-    setMiningProgress(0);
-    setMessage({ text: '正在初始化挖矿进程...', type: 'info' });
+    setMining(true)
+    setMiningProgress(0)
+    setMessage({ text: '正在初始化挖矿进程...', type: 'info' })
 
     // 模拟挖矿进程
     const progressInterval = setInterval(() => {
       setMiningProgress(prev => {
-        if (prev >= 90) return prev;
-        return prev + Math.random() * 20;
-      });
-    }, 200);
+        if (prev >= 90) return prev
+        return prev + Math.random() * 20
+      })
+    }, 200)
 
-    const difficulty = getMiningDifficulty();
-    const estimatedTime = difficulty * 2000; // 毫秒
-    
+    const difficulty = getMiningDifficulty()
+    const estimatedTime = difficulty * 2000 // 毫秒
+
     setTimeout(() => {
-      setMessage({ text: `正在解决挖矿雾题（雾度: ${difficulty}）...`, type: 'info' });
-    }, 500);
+      setMessage({ text: `正在解决挖矿雾题（雾度: ${difficulty}）...`, type: 'info' })
+    }, 500)
 
     try {
       const response = await axios.post('/api/mine', {
         minerWalletName: selectedMiner
-      });
+      })
 
-      clearInterval(progressInterval);
-      setMiningProgress(100);
-      
-      setMessage({ 
-        text: `✨ 挖矿成功！${selectedMiner} 获得 ${response.data.reward} 代币奖励`, 
-        type: 'success' 
-      });
-      
+      clearInterval(progressInterval)
+      setMiningProgress(100)
+
+      setMessage({
+        text: `✨ 挖矿成功！${selectedMiner} 获得 ${response.data.reward} 代币奖励`,
+        type: 'success'
+      })
+
       // Update mining stats
       setMiningStats(prev => ({
         blocksMinedToday: prev.blocksMinedToday + 1,
         totalRewardsEarned: prev.totalRewardsEarned + response.data.reward
-      }));
+      }))
 
       // 自动刷新数据
-      onBlockMined();
-      
+      onBlockMined()
+
       // 清空选择的矿工，准备下一次挖矿
       setTimeout(() => {
-        setSelectedMiner('');
-        setMiningProgress(0);
-      }, 3000);
-      
+        setSelectedMiner('')
+        setMiningProgress(0)
+      }, 3000)
+
     } catch (error) {
-      clearInterval(progressInterval);
-      setMiningProgress(0);
-      setMessage({ 
-        text: error.response?.data?.error || '挖矿失败，请稍后重试', 
-        type: 'error' 
-      });
+      clearInterval(progressInterval)
+      setMiningProgress(0)
+      setMessage({
+        text: error.response?.data?.error || '挖矿失败，请稍后重试',
+        type: 'error'
+      })
     } finally {
-      setMining(false);
+      setMining(false)
     }
-  };
+  }
 
   const getMiningDifficulty = () => {
     // Simulate mining difficulty based on pending transactions
-    return Math.max(2, Math.floor(pendingTransactions.length / 3) + 2);
-  };
+    return Math.max(2, Math.floor(pendingTransactions.length / 3) + 2)
+  }
 
   const estimateMiningTime = () => {
-    const difficulty = getMiningDifficulty();
-    return `${difficulty * 2}-${difficulty * 4} seconds`;
-  };
+    const difficulty = getMiningDifficulty()
+    return `${difficulty * 2}-${difficulty * 4} seconds`
+  }
+
+  // 计算挖矿效率
+  const getMiningEfficiency = () => {
+    if (miningStats.blocksMinedToday === 0) return '0%'
+    const efficiency = Math.min(100, (miningStats.blocksMinedToday / 10) * 100)
+    return `${Math.round(efficiency)}%`
+  }
 
   return (
     <div>
@@ -109,6 +132,16 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
         <div className="stat-card">
           <div className="stat-value">{pendingTransactions.length}</div>
           <div className="stat-label">待处理交易</div>
+          {pendingTransactions.length > 0 && (
+            <div style={{
+              fontSize: '0.8rem',
+              color: '#ffc107',
+              marginTop: '0.25rem',
+              fontWeight: 'bold'
+            }}>
+              ⏳ 等待挖掘
+            </div>
+          )}
         </div>
         <div className="stat-card">
           <div className="stat-value">{getMiningDifficulty()}</div>
@@ -128,7 +161,7 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
         <h2>⛏️ 挖掘新区块</h2>
         {pendingTransactions.length === 0 ? (
           <div className="alert info">
-<strong>没有交易可挖掘！</strong><br />
+            <strong>没有交易可挖掘！</strong><br />
             请先创建一些交易，然后回来挖掘区块。
           </div>
         ) : (
@@ -150,10 +183,10 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
               </select>
             </div>
 
-            <div style={{ 
-              background: '#f8f9fa', 
-              padding: '1rem', 
-              borderRadius: '5px', 
+            <div style={{
+              background: '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '5px',
               marginBottom: '1rem',
               border: '1px solid #e1e5e9'
             }}>
@@ -194,15 +227,23 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
                     transition: 'width 0.3s ease, background-color 0.3s ease'
                   }} />
                 </div>
+                <div style={{
+                  fontSize: '0.8rem',
+                  color: '#666',
+                  marginTop: '0.5rem',
+                  textAlign: 'center'
+                }}>
+                  {miningProgress < 100 ? '正在计算哈希值...' : '挖矿完成！'}
+                </div>
               </div>
             )}
-            
-            <button 
+
+            <button
               className={`btn ${mining ? 'secondary' : 'success'}`}
-              onClick={startMining} 
+              onClick={startMining}
               disabled={mining || !selectedMiner}
-              style={{ 
-                fontSize: '1.1rem', 
+              style={{
+                fontSize: '1.1rem',
                 padding: '1rem 2rem',
                 width: '100%',
                 position: 'relative',
@@ -227,7 +268,7 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
                 '⛏️ 开始挖矿'
               )}
             </button>
-            
+
             <style>{`
               @keyframes spin {
                 0% { transform: rotate(0deg); }
@@ -241,20 +282,28 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
       {pendingTransactions.length > 0 && (
         <div className="card">
           <h2>📋 待处理交易 ({pendingTransactions.length})</h2>
-        {pendingTransactions.length > 0 && (
-          <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            ⚙️ 这些交易将在下一次挖矿时被打包进区块
-          </p>
-        )}
+          <div style={{
+            padding: '0.75rem',
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffeaa7',
+            borderRadius: '6px',
+            marginBottom: '1rem',
+            color: '#856404'
+          }}>
+            <strong>💡 提示:</strong> 这些交易将在下一次挖矿时被打包进区块。挖矿将一次性确认所有待处理交易。
+          </div>
           <div className="transaction-list">
             {pendingTransactions.map((tx, index) => (
-              <div key={tx.id || index} className="transaction-item">
+              <div key={tx.id || index} className="transaction-item" style={{
+                borderLeft: '4px solid #ffc107',
+                backgroundColor: '#fffbf0'
+              }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <strong>{tx.type.toUpperCase()}</strong>: {tx.amount} 代币
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                    {new Date(tx.timestamp).toLocaleString()}
+                  <div style={{ fontSize: '0.8rem', color: '#ffc107', fontWeight: 'bold' }}>
+                    ⏳ 等待挖掘
                   </div>
                 </div>
                 <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
@@ -263,6 +312,9 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
                   ) : (
                     <>接收方: {tx.to.substring(0, 16)}... (${tx.type})</>
                   )}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#856404', marginTop: '0.25rem' }}>
+                  创建时间: {new Date(tx.timestamp).toLocaleString()}
                 </div>
               </div>
             ))}
@@ -281,6 +333,14 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
             <div className="stat-value">{miningStats.totalRewardsEarned}</div>
             <div className="stat-label">总奖励</div>
           </div>
+          <div className="stat-card">
+            <div className="stat-value">{getMiningEfficiency()}</div>
+            <div className="stat-label">挖矿效率</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{pendingTransactions.length}</div>
+            <div className="stat-label">待处理交易</div>
+          </div>
         </div>
       </div>
 
@@ -295,13 +355,14 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
             <li><strong>获得奖励:</strong> 矿工获得代币奖励</li>
             <li><strong>更新链:</strong> 新区块被添加到区块链中</li>
           </ol>
-          
+
           <h4 style={{ marginTop: '1rem' }}>提示:</h4>
           <ul style={{ paddingLeft: '1.5rem' }}>
             <li>挖矿时间随雾度增加而增加</li>
             <li>更多的待处理交易不会减慢挖矿速度</li>
             <li>选择任何钱包来接收挖矿奖励</li>
             <li>挖矿一次性确认所有待处理交易</li>
+            <li>系统会自动刷新待处理交易状态</li>
           </ul>
         </div>
       </div>
@@ -315,7 +376,7 @@ const MiningPanel = ({ wallets, pendingTransactions, onBlockMined }) => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default MiningPanel;
+export default MiningPanel

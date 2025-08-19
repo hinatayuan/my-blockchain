@@ -259,6 +259,32 @@
       "previousHash": "006d917962e7699009fe79e0109eba7ca599795dce6dbd4b2731ca5a309074ce",
       "nonce": 1331,
       "hash": "0008802e701646c51dc90602a398b62360f299815556376bb48dfaf721a7ad9e"
+    },
+    {
+      "timestamp": 1755600213061,
+      "transactions": [
+        {
+          "id": "6b636ade-2735-445a-bf54-c249816853d0",
+          "from": null,
+          "to": "d9ccd7fa827ac02c03ecd042df17e0ef051f87b8",
+          "amount": 100,
+          "type": "mint",
+          "timestamp": 1755600189860,
+          "signature": null
+        },
+        {
+          "id": "6e9a411b-b6be-4935-9f0d-0b241ca1de16",
+          "from": null,
+          "to": "d9ccd7fa827ac02c03ecd042df17e0ef051f87b8",
+          "amount": 100,
+          "type": "reward",
+          "timestamp": 1755600213061,
+          "signature": null
+        }
+      ],
+      "previousHash": "0008802e701646c51dc90602a398b62360f299815556376bb48dfaf721a7ad9e",
+      "nonce": 117,
+      "hash": "00a3c6552af7a42e72e89452ef1b0d3072241939f335073e27ffd9507bcdc948"
     }
   ],
   "difficulty": 2,
@@ -275,7 +301,7 @@
     ],
     [
       "d9ccd7fa827ac02c03ecd042df17e0ef051f87b8",
-      700
+      900
     ],
     [
       "223b3940bebb49107d801379402058840b3bbd55",
