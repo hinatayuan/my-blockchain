@@ -1,3 +1,4 @@
+// Express服务器和WebSocket相关依赖
 import express, { Request, Response } from 'express'
 import cors from 'cors'
 import { Server } from 'socket.io'
@@ -5,43 +6,50 @@ import http from 'http'
 import fs from 'fs'
 import path from 'path'
 
+// 区块链核心组件
 import { Blockchain } from './blockchain'
 import { WalletManager } from './wallet'
 
+// 创建Express应用和HTTP服务器
 const app = express()
 const server = http.createServer(app)
+// 配置Socket.IO用于实时通信
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'http://localhost:3000', // 允许前端跨域访问
     methods: ['GET', 'POST']
   }
 })
 
+// 服务器端口配置
 const PORT = process.env['PORT'] || 5002
 
-// Initialize blockchain and wallet manager
+// 初始化区块链实例和钱包管理器
 const myBlockchain = new Blockchain()
 const walletManager = new WalletManager()
 
-// Data persistence paths
+// 数据持久化文件路径配置
 const DATA_DIR = path.join(__dirname, '..', 'data')
 const BLOCKCHAIN_FILE = path.join(DATA_DIR, 'blockchain.json')
 const WALLETS_FILE = path.join(DATA_DIR, 'wallets.json')
 
-// Ensure data directory exists
+// 确保数据目录存在
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true })
 }
 
-// Save blockchain data
+/**
+ * 保存区块链数据到文件
+ * 包括区块链、难度、待处理交易、挖矿奖励和余额等信息
+ */
 function saveBlockchainData(): void {
   try {
     const blockchainData = {
-      chain: myBlockchain.chain,
-      difficulty: myBlockchain.difficulty,
-      pendingTransactions: myBlockchain.pendingTransactions,
-      miningReward: myBlockchain.miningReward,
-      balances: Array.from(myBlockchain.balances.entries())
+      chain: myBlockchain.chain, // 区块链主链
+      difficulty: myBlockchain.difficulty, // 挖矿难度
+      pendingTransactions: myBlockchain.pendingTransactions, // 待处理交易
+      miningReward: myBlockchain.miningReward, // 挖矿奖励
+      balances: Array.from(myBlockchain.balances.entries()) // 账户余额映射
     }
     fs.writeFileSync(BLOCKCHAIN_FILE, JSON.stringify(blockchainData, null, 2))
   } catch (error) {
@@ -49,7 +57,10 @@ function saveBlockchainData(): void {
   }
 }
 
-// Save wallet data
+/**
+ * 保存钱包数据到文件
+ * 包括钱包名称、私钥、公钥和地址信息
+ */
 function saveWalletData(): void {
   try {
     const walletData: Array<{
@@ -58,6 +69,7 @@ function saveWalletData(): void {
       publicKey: string
       address: string
     }> = []
+    // 遍历所有钱包，提取关键信息
     for (const [name, wallet] of walletManager.wallets) {
       walletData.push({
         name,
@@ -72,16 +84,20 @@ function saveWalletData(): void {
   }
 }
 
-// Load blockchain data
+/**
+ * 从文件加载区块链数据
+ * @returns 是否成功加载数据
+ */
 function loadBlockchainData(): boolean {
   try {
     if (fs.existsSync(BLOCKCHAIN_FILE)) {
       const data = JSON.parse(fs.readFileSync(BLOCKCHAIN_FILE, 'utf8'))
 
-      // Reconstruct Block and Transaction objects
+      // 重新构造Block和Transaction对象
       const { Block } = require('./block')
       const { TransactionClass } = require('./transaction')
 
+      // 重建区块链，将JSON数据转换为类实例
       myBlockchain.chain = data.chain.map((blockData: any) => {
         const transactions = blockData.transactions.map((txData: any) => {
           return TransactionClass.fromData(txData)
@@ -91,20 +107,23 @@ function loadBlockchainData(): boolean {
           transactions,
           blockData.previousHash
         )
+        // 恢复区块的哈希值和nonce
         block.hash = blockData.hash
         block.nonce = blockData.nonce
         return block
       })
 
+      // 恢复挖矿难度
       myBlockchain.difficulty = data.difficulty || 2
 
-      // Reconstruct pending transactions
+      // 重建待处理交易队列
       myBlockchain.pendingTransactions = (data.pendingTransactions || []).map(
         (txData: any) => {
           return TransactionClass.fromData(txData)
         }
       )
 
+      // 恢复挖矿奖励和余额信息
       myBlockchain.miningReward = data.miningReward || 100
       if (data.balances) {
         myBlockchain.balances = new Map(data.balances)
@@ -118,7 +137,11 @@ function loadBlockchainData(): boolean {
   return false
 }
 
-// Load wallet data
+/**
+ * 从文件加载钱包数据
+ * 支持RSA旧格式和新的椭圆曲线格式
+ * @returns 是否成功加载数据
+ */
 function loadWalletData(): boolean {
   try {
     if (fs.existsSync(WALLETS_FILE)) {
@@ -136,19 +159,32 @@ function loadWalletData(): boolean {
   return false
 }
 
-// Middleware
-app.use(cors())
-app.use(express.json())
+// 中间件配置
+app.use(cors()) // 允许跨域请求
+app.use(express.json()) // 解析JSON格式的请求体
 
-// Blockchain endpoints
+// ==================== 区块链 API 接口 ====================
+
+/**
+ * 获取区块链基本信息
+ * GET /api/blockchain/info
+ */
 app.get('/api/blockchain/info', (_req: Request, res: Response) => {
   res.json(myBlockchain.getBlockchainInfo())
 })
 
+/**
+ * 获取所有区块
+ * GET /api/blockchain/blocks
+ */
 app.get('/api/blockchain/blocks', (_req: Request, res: Response) => {
   res.json(myBlockchain.chain)
 })
 
+/**
+ * 根据索引获取指定区块
+ * GET /api/blockchain/blocks/:index
+ */
 app.get('/api/blockchain/blocks/:index', (req: Request, res: Response) => {
   const index = parseInt(req.params['index'] || '0')
   const block = myBlockchain.getBlock(index)
@@ -160,10 +196,18 @@ app.get('/api/blockchain/blocks/:index', (req: Request, res: Response) => {
   }
 })
 
+/**
+ * 获取所有交易记录
+ * GET /api/blockchain/transactions
+ */
 app.get('/api/blockchain/transactions', (_req: Request, res: Response) => {
   res.json(myBlockchain.getAllTransactions())
 })
 
+/**
+ * 获取待处理交易列表
+ * GET /api/blockchain/pending-transactions
+ */
 app.get(
   '/api/blockchain/pending-transactions',
   (_req: Request, res: Response) => {
@@ -171,7 +215,13 @@ app.get(
   }
 )
 
-// Wallet endpoints
+// ==================== 钱包 API 接口 ====================
+
+/**
+ * 创建新钱包
+ * POST /api/wallets
+ * 请求体: { name: string }
+ */
 app.post('/api/wallets', (req: Request, res: Response) => {
   try {
     const { name } = req.body
@@ -197,8 +247,13 @@ app.post('/api/wallets', (req: Request, res: Response) => {
   }
 })
 
+/**
+ * 获取所有钱包列表及其余额
+ * GET /api/wallets
+ */
 app.get('/api/wallets', (_req: Request, res: Response) => {
   const wallets = walletManager.getAllWallets()
+  // 为每个钱包添加当前余额信息
   const walletsWithBalances = wallets.map((wallet) => ({
     ...wallet,
     balance: myBlockchain.getBalance(wallet.address)
@@ -206,6 +261,10 @@ app.get('/api/wallets', (_req: Request, res: Response) => {
   res.json(walletsWithBalances)
 })
 
+/**
+ * 根据名称获取指定钱包信息
+ * GET /api/wallets/:name
+ */
 app.get('/api/wallets/:name', (req: Request, res: Response) => {
   const walletName = req.params['name']
   if (!walletName) {
@@ -224,6 +283,10 @@ app.get('/api/wallets/:name', (req: Request, res: Response) => {
   }
 })
 
+/**
+ * 删除指定钱包
+ * DELETE /api/wallets/:name
+ */
 app.delete('/api/wallets/:name', (req: Request, res: Response) => {
   const walletName = req.params['name']
   if (!walletName) {
@@ -232,15 +295,21 @@ app.delete('/api/wallets/:name', (req: Request, res: Response) => {
 
   const success = walletManager.deleteWallet(walletName)
   if (success) {
-    saveWalletData()
-    io.emit('walletDeleted', walletName)
+    saveWalletData() // 持久化数据
+    io.emit('walletDeleted', walletName) // 通知所有客户端
     return res.json({ message: '钱包删除成功' })
   } else {
     return res.status(404).json({ error: '钱包不存在' })
   }
 })
 
-// Transaction endpoints
+// ==================== 交易 API 接口 ====================
+
+/**
+ * 创建新交易
+ * POST /api/transactions
+ * 请求体: { fromWalletName: string, to: string, amount: number }
+ */
 app.post('/api/transactions', (req: Request, res: Response) => {
   try {
     const { fromWalletName, to, amount } = req.body
@@ -277,7 +346,13 @@ app.post('/api/transactions', (req: Request, res: Response) => {
   }
 })
 
-// Mining endpoints
+// ==================== 挖矿 API 接口 ====================
+
+/**
+ * 挖矿，将待处理交易打包成区块
+ * POST /api/mine
+ * 请求体: { minerWalletName: string }
+ */
 app.post('/api/mine', (req: Request, res: Response) => {
   try {
     const { minerWalletName } = req.body
@@ -314,7 +389,13 @@ app.post('/api/mine', (req: Request, res: Response) => {
   }
 })
 
-// Faucet endpoints (铸造代币)
+// ==================== 代币水龙头 API 接口 ====================
+
+/**
+ * 代币水龙头，向指定钱包免费发放代币
+ * POST /api/faucet
+ * 请求体: { walletName: string, amount?: number }
+ */
 app.post('/api/faucet', (req: Request, res: Response) => {
   try {
     const { walletName, amount = 1000 } = req.body
@@ -352,7 +433,11 @@ app.post('/api/faucet', (req: Request, res: Response) => {
   }
 })
 
-// Token minting endpoints
+/**
+ * 代币铸造，创建新的代币
+ * POST /api/mint
+ * 请求体: { to?: string, amount: number, walletName?: string }
+ */
 app.post('/api/mint', (req: Request, res: Response) => {
   try {
     const { to, amount, walletName } = req.body
@@ -390,19 +475,24 @@ app.post('/api/mint', (req: Request, res: Response) => {
   }
 })
 
-// Socket.IO connection handling
+// ==================== WebSocket 连接处理 ====================
+
+/**
+ * 处理新的WebSocket连接
+ * 向客户端发送初始区块链状态
+ */
 io.on('connection', (socket) => {
   console.log('客户端连接:', socket.id)
 
-  // Send initial blockchain state
+  // 发送初始区块链状态给新连接的客户端
   socket.emit('blockchainState', {
-    blockchain: myBlockchain.getBlockchainInfo(),
+    blockchain: myBlockchain.getBlockchainInfo(), // 区块链基本信息
     wallets: walletManager.getAllWallets().map((wallet) => ({
       ...wallet,
-      balance: myBlockchain.getBalance(wallet.address)
+      balance: myBlockchain.getBalance(wallet.address) // 每个钱包包含实时余额
     })),
-    blocks: myBlockchain.chain,
-    pendingTransactions: myBlockchain.pendingTransactions
+    blocks: myBlockchain.chain, // 所有区块
+    pendingTransactions: myBlockchain.pendingTransactions // 待处理交易
   })
 
   socket.on('disconnect', () => {
@@ -410,7 +500,12 @@ io.on('connection', (socket) => {
   })
 })
 
-// Initialize demo data if no existing data
+// ==================== 初始化和启动 ====================
+
+/**
+ * 初始化演示数据（如果没有现有数据）
+ * 创建Alice、Bob、Charlie三个演示钱包并铸造初始代币
+ */
 const initializeDemo = (): void => {
   const hasBlockchainData = loadBlockchainData()
   const hasWalletData = loadWalletData()
@@ -447,16 +542,23 @@ const initializeDemo = (): void => {
   console.log('钱包数量:', walletManager.wallets.size)
 }
 
-// Auto-save data periodically
+/**
+ * 定时自动保存数据，防止数据丢失
+ * 每30秒保存一次区块链和钱包数据
+ */
 setInterval(() => {
   saveBlockchainData()
   saveWalletData()
-}, 30000) // Save every 30 seconds
+}, 30000) // 每30秒保存一次
 
-// Start server
+/**
+ * 启动HTTP服务器
+ * 初始化演示数据并开始监听端口
+ */
 server.listen(PORT, () => {
   console.log(`本地区块链服务器运行在端口 ${PORT}`)
-  initializeDemo()
+  initializeDemo() // 初始化演示数据
 })
 
+// 导出核心对象供外部使用
 export { app, server, myBlockchain, walletManager }

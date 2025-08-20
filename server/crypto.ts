@@ -1,7 +1,9 @@
+// Node.js内置加密模块和椭圆曲线加密库
 import * as crypto from 'crypto'
 import * as secp256k1 from '@noble/secp256k1'
 
 // 为@noble/secp256k1 2.x版本设置HMAC依赖
+// 这是库要求的配置，用于椭圆曲线签名算法
 ; (secp256k1 as any).etc.hmacSha256Sync = (key: Uint8Array, ...messages: Uint8Array[]) => {
   const hmac = crypto.createHmac('sha256', key)
   for (const message of messages) {
@@ -10,31 +12,38 @@ import * as secp256k1 from '@noble/secp256k1'
   return hmac.digest()
 }
 
+// 密钥对接口，存储公钥和私钥
 export interface KeyPair {
-  publicKey: string
-  privateKey: string
+  publicKey: string // 十六进制格式的公钥
+  privateKey: string // 十六进制格式的私钥
 }
 
+// 交易数据接口，用于加密签名
 export interface TransactionData {
-  id: string
-  from: string | null
-  to: string
-  amount: number
-  type: string
-  timestamp: number
+  id: string // 交易唯一标识符
+  from: string | null // 发送者地址
+  to: string // 接收者地址
+  amount: number // 交易金额
+  type: string // 交易类型
+  timestamp: number // 时间戳
 }
 
+/**
+ * 加密工具类，提供区块链所需的各种加密功能
+ * 使用secp256k1椭圆曲线算法，与比特币和以太坊兼容
+ */
 export class CryptoUtils {
   /**
    * 生成椭圆曲线密钥对 (secp256k1)
-   * 返回十六进制格式的公私钥对
+   * 使用与比特币和以太坊相同的椭圆曲线算法
+   * @returns 包含公钥和私钥的密钥对（十六进制格式）
    */
   static generateKeyPair(): KeyPair {
-    // 生成32字节随机私钥
+    // 生成32字节（256位）随机私钥
     const privateKeyBytes = crypto.randomBytes(32)
     const privateKey = privateKeyBytes.toString('hex')
     
-    // 从私钥生成对应的公钥 (33字节压缩格式)
+    // 从私钥生成对应的公钥（33字节压缩格式）
     const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, true)
     const publicKey = Buffer.from(publicKeyBytes).toString('hex')
     

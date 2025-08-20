@@ -1,69 +1,87 @@
+// React核心库
 import React from 'react'
 
+// 区块链数据接口，定义显示所需的区块链信息
 interface BlockchainData {
   info: {
-    height?: number
-    difficulty?: number
-    pendingTransactions?: number
-    totalSupply?: number
-    isValid?: boolean
-    miningReward?: number
+    height?: number // 区块链高度
+    difficulty?: number // 挖矿难度
+    pendingTransactions?: number // 待处理交易数
+    totalSupply?: number // 代币总供应量
+    isValid?: boolean // 区块链是否有效
+    miningReward?: number // 挖矿奖励
   }
-  blocks: any[]
-  transactions: any[]
-  pendingTransactions: any[]
+  blocks: any[] // 区块列表
+  transactions: any[] // 交易列表
+  pendingTransactions: any[] // 待处理交易
 }
 
+// 钱包信息接口
 interface Wallet {
-  name: string
-  address: string
-  publicKey: string
-  balance: number
+  name: string // 钱包名称
+  address: string // 钱包地址
+  publicKey: string // 公钥
+  balance: number // 余额
 }
 
+// 通知信息接口
 interface Notification {
-  id: number
-  message: string
-  type: 'info' | 'success' | 'error'
-  timestamp: string
+  id: number // 通知ID
+  message: string // 通知内容
+  type: 'info' | 'success' | 'error' // 通知类型
+  timestamp: string // 时间戳
 }
 
+// Dashboard组件的props接口
 interface DashboardProps {
-  blockchainData: BlockchainData
-  wallets: Wallet[]
-  notifications: Notification[]
+  blockchainData: BlockchainData // 区块链数据
+  wallets: Wallet[] // 钱包列表
+  notifications: Notification[] // 通知列表
 }
 
+/**
+ * Dashboard组件 - 仪表盘页面
+ * 显示区块链系统的整体概览和关键统计信息
+ */
 const Dashboard: React.FC<DashboardProps> = ({
-  blockchainData,
-  wallets,
-  notifications
+  blockchainData, // 区块链数据
+  wallets, // 钱包列表
+  notifications // 通知列表
 }) => {
-  const { info } = blockchainData
+  const { info } = blockchainData // 提取区块链基本信息
 
-  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
-  const totalTransactions = blockchainData.transactions.length
-  const pendingCount = blockchainData.pendingTransactions.length
+  // 计算统计数据
+  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0) // 所有钱包总余额
+  const totalTransactions = blockchainData.transactions.length // 总交易数
+  const pendingCount = blockchainData.pendingTransactions.length // 待处理交易数
 
-  // 计算最近24小时的交易数量
+  /**
+   * 计算最近24小时内的交易数量
+   * @returns 近24小时交易数
+   */
   const getRecentTransactions = (): number => {
-    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000 // 24小时前的时间戳
     return blockchainData.transactions.filter((tx) => tx.timestamp > oneDayAgo)
       .length
   }
 
-  // 计算平均区块时间
+  /**
+   * 计算平均区块生成时间
+   * 基于最近10个区块的时间间隔计算
+   * @returns 平均区块时间（秒）
+   */
   const getAverageBlockTime = (): string => {
-    if (blockchainData.blocks.length < 2) return 'N/A'
-    const blocks = blockchainData.blocks.slice(-10) // 最近10个区块
+    if (blockchainData.blocks.length < 2) return 'N/A' // 区块不足时返回N/A
+    const blocks = blockchainData.blocks.slice(-10) // 取最近10个区块
     if (blocks.length < 2) return 'N/A'
 
     let totalTime = 0
+    // 计算相邻区块间的时间差
     for (let i = 1; i < blocks.length; i++) {
       totalTime += blocks[i].timestamp - blocks[i - 1].timestamp
     }
-    const avgTime = totalTime / (blocks.length - 1)
-    return `${Math.round(avgTime / 1000)}秒`
+    const avgTime = totalTime / (blocks.length - 1) // 平均时间间隔
+    return `${Math.round(avgTime / 1000)}秒` // 转换为秒并四舍五入
   }
 
   return (

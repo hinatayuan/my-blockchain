@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "nodemon --exec ts-node src/server.ts",
+    "server:dev": "nodemon --exec ts-node server/server.ts",
     "client:dev": "cd client && npm start",
     "build": "npm run build:server && cd client && npm run build",
     "build:server": "tsc",
