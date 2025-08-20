@@ -123,16 +123,12 @@ function loadWalletData(): boolean {
   try {
     if (fs.existsSync(WALLETS_FILE)) {
       const data = JSON.parse(fs.readFileSync(WALLETS_FILE, 'utf8'))
-      for (const walletData of data) {
-        const { Wallet } = require('./wallet')
-        const wallet = Wallet.fromKeys(
-          walletData.privateKey,
-          walletData.publicKey
-        )
-        walletManager.wallets.set(walletData.name, wallet)
-      }
-      console.log('Wallet data loaded successfully')
-      return true
+      
+      // 使用WalletManager的新方法加载钱包（支持新旧格式）
+      walletManager.loadWallets(data)
+      
+      console.log(`Wallet data loaded successfully. Active wallets: ${walletManager.wallets.size}`)
+      return walletManager.wallets.size > 0
     }
   } catch (error) {
     console.error('Failed to load wallet data:', error)
