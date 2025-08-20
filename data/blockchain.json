@@ -139,6 +139,118 @@
       "previousHash": "00fb20bd1d9632f6012a9766b8506d8c20e48495dd61e7a084708bd1a6000964",
       "nonce": 23,
       "hash": "002c2c6df6fd9f836e5d6663693e93ece4f99dfe91585dd4f5b1bde03b3dbd9e"
+    },
+    {
+      "timestamp": 1755699540723,
+      "transactions": [
+        {
+          "id": "ff9da106-51f8-4e20-8eb2-e0e329d415a4",
+          "from": null,
+          "to": "e3b8e7aed5f7f8f5aeaa2b7354e283145b8ed903",
+          "amount": 100,
+          "type": "mint",
+          "timestamp": 1755699526045,
+          "signature": null,
+          "hash": "f34c199fe308683ef46338aa0bd849bfc4aa28e1413d2390bb33b197d0678101"
+        },
+        {
+          "id": "17b528a9-44e1-4200-9b48-d5b0a0d7cdf7",
+          "from": null,
+          "to": "e3b8e7aed5f7f8f5aeaa2b7354e283145b8ed903",
+          "amount": 100,
+          "type": "reward",
+          "timestamp": 1755699540723,
+          "signature": null,
+          "hash": "b7c7f81ffc43d5bf10238498af413966e83e89977feb81ad20bea4da7174099e"
+        }
+      ],
+      "previousHash": "002c2c6df6fd9f836e5d6663693e93ece4f99dfe91585dd4f5b1bde03b3dbd9e",
+      "nonce": 33,
+      "hash": "00987d3eeb3702ea84bfb4591eb000c5eca2696a2ac9f59a5d4d7b1683d1360d"
+    },
+    {
+      "timestamp": 1755699603757,
+      "transactions": [
+        {
+          "id": "596d55c3-20b0-49cf-a330-319c03a93c4c",
+          "from": "e3b8e7aed5f7f8f5aeaa2b7354e283145b8ed903",
+          "to": "63039e2618829e0080211beeb682c4fda2beb6cb",
+          "amount": 100,
+          "type": "transfer",
+          "timestamp": 1755699594316,
+          "signature": "cddcf502b0c51b786056abafd807fd307522911e197e4423191f20ed4cd1f6d9253b5c8947416f96ee2454466f8a1de176608b04da44342213ebc17c5c94e126",
+          "hash": "ac5451fc08189331b9b70a95e502728765814d895639fb0a94cc0b1e213effc3"
+        },
+        {
+          "id": "b5eb644a-4963-40b7-b510-157a5a039a73",
+          "from": null,
+          "to": "e3b8e7aed5f7f8f5aeaa2b7354e283145b8ed903",
+          "amount": 100,
+          "type": "reward",
+          "timestamp": 1755699603757,
+          "signature": null,
+          "hash": "c893676bfe5d22b0a9a21a8c1e3f1cb046c8a8c221d539865813660bc8488611"
+        }
+      ],
+      "previousHash": "00987d3eeb3702ea84bfb4591eb000c5eca2696a2ac9f59a5d4d7b1683d1360d",
+      "nonce": 225,
+      "hash": "00fefe35556e6298653016c7f91e3d210ee7fa6c12c8a2646e57f0cb25078052"
+    },
+    {
+      "timestamp": 1755700340640,
+      "transactions": [
+        {
+          "id": "25e09043-f03a-4596-ad61-6492c0093f79",
+          "from": null,
+          "to": "94be650963bb481c3369829b406e937e7e26a004",
+          "amount": 100,
+          "type": "mint",
+          "timestamp": 1755700327020,
+          "signature": null,
+          "hash": "8b15a877b5f3994829cf23a9732524287a242cf7cfe2d678629c436d15bbc0b0"
+        },
+        {
+          "id": "408fd0b8-28f0-4d65-ad12-191d934e7c71",
+          "from": null,
+          "to": "63039e2618829e0080211beeb682c4fda2beb6cb",
+          "amount": 100,
+          "type": "reward",
+          "timestamp": 1755700340640,
+          "signature": null,
+          "hash": "e96198da4cc4cb2bc8cd462bd0d1ff0ce2a4a40c785393cbb9bc1edb39f53c46"
+        }
+      ],
+      "previousHash": "00fefe35556e6298653016c7f91e3d210ee7fa6c12c8a2646e57f0cb25078052",
+      "nonce": 94,
+      "hash": "00f8fcc1f0f84e88b83f8617840bb7a00d933e7d2c772b613e3dbb73eb8ec4c3"
+    },
+    {
+      "timestamp": 1755700404620,
+      "transactions": [
+        {
+          "id": "3d8f3b93-913a-4f42-baa2-abb6d4c16ead",
+          "from": "63039e2618829e0080211beeb682c4fda2beb6cb",
+          "to": "9f0f450d4f66e79170d2d535fcfc0025df04721c",
+          "amount": 100,
+          "type": "transfer",
+          "timestamp": 1755700392617,
+          "signature": "5758d7ff6dda7bc1ba7e584fc977cc4ccb9c11cb547793fea1c4df77061caf100c916f41b520aa96fb48ca5146b3e2422d63d01bdb7327697d1bd19f5840967c",
+          "hash": "3a8329141f3ac3f70986d388da800cd49f234bef00e3eed4aad98c844a83bda1"
+        },
+        {
+          "id": "cf263535-329b-48cc-93ad-df185307c395",
+          "from": null,
+          "to": "6cabda37a98862a626a2e7cd4d693b6488ff53d5",
+          "amount": 100,
+          "type": "reward",
+          "timestamp": 1755700404620,
+          "signature": null,
+          "hash": "15d53f699042601c1a13bd509cf6106e6a5ab03a35519b09c4dca0c3244d80bc"
+        }
+      ],
+      "previousHash": "00f8fcc1f0f84e88b83f8617840bb7a00d933e7d2c772b613e3dbb73eb8ec4c3",
+      "nonce": 76,
+      "hash": "0030317644624dff0db3554423da177223eff222062a8b596d578410b5b0fbd1"
     }
   ],
   "difficulty": 2,
@@ -147,7 +259,7 @@
   "balances": [
     [
       "6cabda37a98862a626a2e7cd4d693b6488ff53d5",
-      3000
+      3100
     ],
     [
       "e2f91566856c555939cd223fd7c9fcd6efd0ea3f",
@@ -155,11 +267,19 @@
     ],
     [
       "9f0f450d4f66e79170d2d535fcfc0025df04721c",
-      500
+      600
     ],
     [
       "63039e2618829e0080211beeb682c4fda2beb6cb",
-      900
+      1000
+    ],
+    [
+      "e3b8e7aed5f7f8f5aeaa2b7354e283145b8ed903",
+      200
+    ],
+    [
+      "94be650963bb481c3369829b406e937e7e26a004",
+      100
     ]
   ]
 }

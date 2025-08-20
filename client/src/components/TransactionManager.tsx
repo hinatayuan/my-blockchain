@@ -1,51 +1,73 @@
+// React核心库和状态管理
 import React, { useState, useEffect } from 'react'
+// HTTP请求库
 import axios from 'axios'
 
+// 钱包数据接口
 interface Wallet {
-  name: string
-  address: string
-  publicKey: string
-  balance: number
+  name: string // 钱包名称
+  address: string // 钱包地址
+  publicKey: string // 公钥
+  balance: number // 余额
 }
 
+// 消息提示接口
 interface Message {
-  text: string
-  type: 'info' | 'success' | 'error'
+  text: string // 消息文本
+  type: 'info' | 'success' | 'error' // 消息类型
 }
 
+// 交易数据接口
 interface Transaction {
-  id: number
-  from: string
-  to: string
-  amount: number
-  type: string
-  timestamp: number
-  status: string
+  id: number // 交易ID
+  from: string // 发送者地址
+  to: string // 接收者地址
+  amount: number // 交易金额
+  type: string // 交易类型
+  timestamp: number // 交易时间戳
+  status: string // 交易状态（pending/confirmed）
 }
 
+// TransactionManager组件的props接口
 interface TransactionManagerProps {
-  wallets: Wallet[]
-  onTransactionCreate: () => void
+  wallets: Wallet[] // 钱包列表
+  onTransactionCreate: () => void // 交易创建后的回调函数
 }
 
+/**
+ * 交易管理组件
+ * 提供代币转账功能，显示交易表单、交易历史和统计信息
+ * 支持在钱包之间转账，使用椭圆曲线数字签名验证交易
+ */
 const TransactionManager: React.FC<TransactionManagerProps> = ({
-  wallets,
-  onTransactionCreate
+  wallets, // 从父组件传入的钱包列表
+  onTransactionCreate // 交易创建后的回调函数
 }) => {
+  // 发送者钱包名称状态
   const [fromWallet, setFromWallet] = useState<string>('')
+  // 接收者地址状态
   const [toAddress, setToAddress] = useState<string>('')
+  // 交易金额状态
   const [amount, setAmount] = useState<string>('')
+  // 加载状态，用于显示交易处理进度
   const [loading, setLoading] = useState<boolean>(false)
+  // 消息提示状态
   const [message, setMessage] = useState<Message | null>(null)
+  // 最近交易记录状态
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
     []
   )
+  // 用于监控钱包数量变化
   const [lastWalletCount, setLastWalletCount] = useState<number>(wallets.length)
 
-  // 监听钱包数量变化
+  /**
+   * 监听钱包数量变化的Effect Hook
+   * 当检测到新钱包时，提示用户刷新页面
+   */
   useEffect(() => {
     if (wallets.length !== lastWalletCount) {
       setLastWalletCount(wallets.length)
+      // 如果钱包数量增加，显示提示信息
       if (wallets.length > lastWalletCount) {
         setMessage({
           text: `检测到新钱包，请刷新页面获取最新余额`,
@@ -55,20 +77,28 @@ const TransactionManager: React.FC<TransactionManagerProps> = ({
     }
   }, [wallets.length, lastWalletCount])
 
+  /**
+   * 发送交易函数
+   * 创建一笔新的代币转账交易，使用椭圆曲线数字签名验证
+   * @param e 表单提交事件
+   */
   const sendTransaction = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault()
+    e.preventDefault() // 阻止表单默认提交
 
+    // 验证表单字段
     if (!fromWallet || !toAddress || !amount || parseFloat(amount) <= 0) {
       setMessage({ text: '请填写所有字段并输入有效值', type: 'error' })
       return
     }
 
+    // 查找发送者钱包
     const senderWallet = wallets.find((w) => w.name === fromWallet)
     if (!senderWallet) {
       setMessage({ text: '找不到发送者钱包', type: 'error' })
       return
     }
 
+    // 检查余额是否足够
     if (senderWallet.balance < parseFloat(amount)) {
       setMessage({ text: '余额不足', type: 'error' })
       return
@@ -82,24 +112,26 @@ const TransactionManager: React.FC<TransactionManagerProps> = ({
     })
 
     try {
+      // 调用后端API创建交易，后端会使用私钥签名交易
       const response = await axios.post('/api/transactions', {
-        fromWalletName: fromWallet,
-        to: toAddress,
-        amount: transactionAmount,
-        memo: '区块链应用转账'
+        fromWalletName: fromWallet, // 发送者钱包名称
+        to: toAddress, // 接收者地址
+        amount: transactionAmount, // 交易金额
+        memo: '区块链应用转账' // 交易备注
       })
 
-      // 添加到最近交易列表
+      // 添加到本地最近交易列表显示
       const newTransaction: Transaction = {
-        id: Date.now(),
-        from: senderWallet.address,
-        to: toAddress,
-        amount: transactionAmount,
-        type: 'transfer',
-        timestamp: Date.now(),
-        status: 'pending'
+        id: Date.now(), // 使用时间戳作为ID
+        from: senderWallet.address, // 发送者地址
+        to: toAddress, // 接收者地址
+        amount: transactionAmount, // 交易金额
+        type: 'transfer', // 交易类型
+        timestamp: Date.now(), // 交易时间
+        status: 'pending' // 初始状态为待处理
       }
 
+      // 保持最近5笔最近交易
       setRecentTransactions((prev) => [newTransaction, ...prev.slice(0, 4)])
 
       setMessage({
@@ -107,38 +139,50 @@ const TransactionManager: React.FC<TransactionManagerProps> = ({
         type: 'success'
       })
 
-      // Reset form
+      // 重置表单
       setFromWallet('')
       setToAddress('')
       setAmount('')
 
-      // 自动刷新数据
+      // 延迟刷新数据，等待后端处理完成
       setTimeout(() => {
         onTransactionCreate()
       }, 500)
     } catch (error: any) {
+      // 处理交易创建失败的情况
       setMessage({
         text: error.response?.data?.error || '创建交易失败，请检查余额和地址',
         type: 'error'
       })
     } finally {
-      setLoading(false)
+      setLoading(false) // 重置加载状态
     }
   }
 
+  /**
+   * 快速选择接收者
+   * 从钱包列表中快速选择一个钱包作为接收者
+   * @param walletName 钱包名称
+   */
   const quickSelectRecipient = (walletName: string): void => {
     const wallet = wallets.find((w) => w.name === walletName)
     if (wallet) {
-      setToAddress(wallet.address)
+      setToAddress(wallet.address) // 设置接收者地址为该钱包的地址
     }
   }
 
-  // 计算总可用余额
+  /**
+   * 计算所有钱包的总可用余额
+   * @returns 总余额
+   */
   const getTotalAvailableBalance = (): number => {
     return wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
   }
 
-  // 获取有资金的钱包数量
+  /**
+   * 获取有资金的钱包数量
+   * @returns 余额大于0的钱包数量
+   */
   const getWalletsWithFunds = (): number => {
     return wallets.filter((w) => w.balance > 0).length
   }
